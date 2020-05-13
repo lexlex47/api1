@@ -3,6 +3,7 @@ require 'rails_helper'
 
 RSpec.describe Article, type: :model do
   
+  # 使用#来测试，instance或者obj
   describe '#validation' do
     # 如果可以成功创建article
     it 'should test that the factory is valid' do
@@ -44,4 +45,25 @@ RSpec.describe Article, type: :model do
     end
   end
   
+  # 使用.来测试，非instance或者obj，例如method
+  describe '.recent' do
+    it 'should list recent article first' do
+      # 创建旧的
+      old_article = create :article
+      # 创建新的
+      new_article = create :article
+      # 假设先返回新的
+      # 可以使用described_class来代替Article,因为该class已经被describe过了
+      expect(described_class.recent).to eq(
+        [new_article, old_article]
+      )
+      # 修改旧创建的创建时间为现在
+      old_article.update_column :created_at, Time.now
+      # 假设先返回旧的，因为旧的时间已经被更新为最新的
+      expect(described_class.recent).to eq(
+        [old_article, new_article]
+      )
+    end
+  end
+
 end

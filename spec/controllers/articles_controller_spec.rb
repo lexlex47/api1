@@ -4,9 +4,13 @@ describe ArticlesController do
   # 因为有不同返回值，所以继续写一个describe
   describe '#index' do
     
+    # 初始化subject
+    subject { get :index }
+
     # 测试路由是否可以工作正常，返回httpcode OK
     it 'should return success response' do
-      get :index
+      # 调用route
+      subject
       expect(response).to have_http_status(:ok)
     end
 
@@ -14,24 +18,31 @@ describe ArticlesController do
     it 'should return proper json data' do
       # 使用create_list方法来创建2个article obj
       FactoryBot.create_list :article, 2
-      get :index
-      json = JSON.parse(response.body)
-      # 从server返回的data不是symbol，是string
-      json_data = json['data']
+      # 调用route
+      subject
       # 认为应该返回的是2个article
       expect(json_data.length).to eq(2)
-      # 分别测试每个返回的json内容应该是
-      expect(json_data[0]['attributes']).to eq({
-        "title" => "MyString 1",
-        "content" => "MyText 1",
-        "slug" => "my-slug-1"
-      })
-      expect(json_data[1]['attributes']).to eq({
-        "title" => "MyString 2",
-        "content" => "MyText 2",
-        "slug" => "my-slug-2"
-      })
+      # 分别测试每个返回的json内容应该是,因为index修改了article，组类都会被自动分配到recent现在，如果需要all，则去修改controller即可
+      Article.recent.each_with_index do |article, index|
+        expect(json_data[index]['attributes']).to eq({
+          # 在这里article 会自动调用factories里面的obj的值
+          "title" => article.title,
+          "content" => article.content,
+          "slug" => article.slug
+        })
+      end
     end
 
+    # 检测返回的article是否按照创建时间进行倒序
+    it 'should return articles in the proper order' do
+      # 创建旧的
+      old_article = create :article
+      # 创建新的
+      new_article = create :article
+      subject
+      # 判断是否先返回新创建的，后返回旧创建的
+      expect(json_data.first['id']).to eq(new_article.id.to_s)
+      expect(json_data.last['id']).to eq(old_article.id.to_s)
+    end
   end
 end
