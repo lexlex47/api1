@@ -44,5 +44,18 @@ describe ArticlesController do
       expect(json_data.first['id']).to eq(new_article.id.to_s)
       expect(json_data.last['id']).to eq(old_article.id.to_s)
     end
+
+    # 测试是否可以返回paginate
+    it 'should paginate results' do
+      # 先创建3个article
+      create_list :article, 3
+      # 加入路由，第几页：第二页，每页的数量：每页一个
+      get :index, params: {page: 2, per_page: 1}
+      # 检测第二页是否只有一篇article
+      expect(json_data.length).to eq 1
+      # 检测第二页的这一篇是否为列表中的第二篇
+      expect(json_data.first['id']).to eq(Article.recent.second.id.to_s)
+    end
+
   end
 end

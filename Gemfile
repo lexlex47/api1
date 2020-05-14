@@ -30,6 +30,10 @@ gem 'dotenv-rails'
 gem 'factory_bot_rails'
 # 将model的内容转化为标准的json格式
 gem 'active_model_serializers'
+# 分页pagaination GEM
+gem 'kaminari'
+# 对接github验证api的GEM
+gem "octokit", "~> 4.0"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', '>= 1.4.2', require: false
