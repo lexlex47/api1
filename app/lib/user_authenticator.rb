@@ -5,7 +5,13 @@ class UserAuthenticator
   class AuthenticationError < StandardError; end
 
   # 加入一个read only的user attrubute，假设已经有一个用户数据，但是并没有在本app中的数据库中创建该user的信息
-  attr_reader :user
+  # 相当于代码：
+  # def user
+  #   return @user
+  # end
+  
+  # 加入一个access_token ,
+  attr_reader :user, :access_token
 
   # 用来exchange已经存在的token
   def initialize(code)
@@ -37,6 +43,13 @@ class UserAuthenticator
       else
         # 在本app中创建该用户，包含之前的信息，同时将probider设置为github
         User.create(user_data.merge(provider: 'github'))
+      end
+    #  判断用户是否已经有本app的token
+     @access_token = if user.access_token.present?
+        user.access_token
+      # 如果没有创建一个新的
+      else
+        user.create_access_token
       end
     end
   end

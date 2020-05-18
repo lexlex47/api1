@@ -58,6 +58,7 @@ describe UserAuthenticator do
         allow_any_instance_of(Octokit::Client).to receive(
           :user).and_return(user_data)
       end
+
       # 检测如果用户不存在的情况下是否会创建新的
       it 'should save the user when does not exist' do
         # 认为可以改变user的数量，改变的值为增加1
@@ -65,6 +66,7 @@ describe UserAuthenticator do
         # 假设user列表中最后一位的名字为my name
         expect(User.last.name).to eq('My Name')
       end
+
       # 检测已经创建好的user，不会再被创建
       it 'should reuse already registerd user' do
         # 先按照user_data来创建本app的user
@@ -73,6 +75,13 @@ describe UserAuthenticator do
         expect{ subject }.not_to change{ User.count }
         # 认为user是同一个
         expect(authenticator.user).to eq(user)
+      end
+
+      # 检测本app的token
+      it "should create and set user's access token" do
+        # 在本app的数据库中创建一个token
+        expect{ subject }.to change{ AccessToken.count }.by(1)
+        expect(authenticator.access_token).to be_present
       end
 
     end
