@@ -26,6 +26,8 @@ class UserAuthenticator
     )
     # exchange出来一个token
     token = client.exchange_code_for_token(code)
+    # 如果code是空，也会进行报错
+    raise AuthenticationError if code.blank?
     # 如果返回的obj内有error string则
     if token.try(:error).present?
       # 如果有报错则返回报错信息
