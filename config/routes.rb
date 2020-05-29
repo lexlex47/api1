@@ -3,6 +3,7 @@ Rails.application.routes.draw do
   
   
   post 'login', to: 'access_tokens#create'
+  delete 'logout', to: 'access_tokens#destroy'
   
   # 现在暂时只需要index
   resources :articles, only: [:index, :show]

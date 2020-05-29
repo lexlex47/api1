@@ -1,5 +1,7 @@
 class ArticlesController < ApplicationController
 
+  skip_before_action :authorize!, only: [:index, :show]
+
   def index
     # 获取article中的recent分类
     articles = Article.recent.
