@@ -58,4 +58,102 @@ describe ArticlesController do
     end
 
   end
+
+  describe '#create' do
+    # subjet写在外面，每一个test都会调用
+    subject { post :create }
+
+    context 'when no code provided' do
+      it_behaves_like 'forbidden_requests'
+    end
+
+    context 'when invalid code provided' do
+      # 再改context测试中，每一个测试之前都会调用该before
+      before { request.headers['authorization'] = 'Invalid token' }
+      it_behaves_like 'forbidden_requests'
+    end
+    
+    context 'when authorized' do
+
+      let(:access_token) { create :access_token }
+      # 设置header里面已经有可以使用的token了
+      before { request.headers['authorization'] = "Bearer #{access_token.token}" }
+
+      context 'when invalid parameters provided' do
+        # 定义不正确的jsondatat格式
+        let(:invalid_attributes) do
+          {
+            data:{
+              attributes: {
+                title: '',
+                content: ''
+              }
+            }
+          }
+        end
+  
+        subject { post :create, params: invalid_attributes }
+  
+        it 'should return 422 status code' do
+          subject
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+  
+        it 'should return proper error json' do
+          subject
+          expect(json['errors']).to include(
+            {
+            "source" => { "pointer" => "/data/attributes/title" },
+            "detail" => "can't be blank"
+            },
+            {
+            "source" => { "pointer" => "/data/attributes/content" },
+            "detail" => "can't be blank"
+            },
+            {
+            "source" => { "pointer" => "/data/attributes/slug" },
+            "detail" => "can't be blank"
+            },
+        )
+        end
+      end
+
+      context 'when success request sent' do
+        let(:access_token) { create :access_token }
+        # 设置header里面已经有可以使用的token了
+        before { request.headers['authorization'] = "Bearer #{access_token.token}" }
+        # 定义不正确的jsondatat格式
+        let(:valid_attributes) do
+          {
+            'data' => {
+              'attributes' => {
+                'title' => 'Title here',
+                'content' => 'Content here',
+                'slug' => 'this-is-some-title'
+              }
+            }
+          }
+        end
+        subject {post :create, params: valid_attributes}
+
+        # 测试如果创建成功
+        it 'should have 201 status code' do
+          subject
+          expect(response).to have_http_status(:created)
+        end
+
+        it 'should have proper json body' do
+          subject
+          expect(json_data['attributes']).to include(valid_attributes['data']['attributes'])
+        end
+
+        # 测试article添加
+        it 'should create the article' do
+          expect{ subject }.to change{ Article.count }.by(1)
+        end
+
+      end
+    end
+  end
+
 end
