@@ -156,4 +156,116 @@ describe ArticlesController do
     end
   end
 
+  # 测试更新
+  describe '#update' do
+
+    let(:article) {create :article}
+    # subjet写在外面，每一个test都会调用
+    subject { patch :update, params: {id: article.id} }
+
+    context 'when no code provided' do
+      it_behaves_like 'forbidden_requests'
+    end
+
+    context 'when invalid code provided' do
+      # 再改context测试中，每一个测试之前都会调用该before
+      before { request.headers['authorization'] = 'Invalid token' }
+      it_behaves_like 'forbidden_requests'
+    end
+
+    context 'when trying to update not owned article' do
+      let(:other_article) { create :article }
+      subject { patch :update, params: { id: other_article.id } }
+      before { request.headers['authorization'] = "Bearer #{access_token.token}" }
+      it_behaves_like 'forbidden_requests' 
+    end
+    
+    context 'when authorized' do
+
+      let(:access_token) { create :access_token }
+      # 设置header里面已经有可以使用的token了
+      before { request.headers['authorization'] = "Bearer #{access_token.token}" }
+
+      context 'when invalid parameters provided' do
+        # 定义不正确的jsondatat格式
+        let(:invalid_attributes) do
+          {
+            data:{
+              attributes: {
+                title: '',
+                content: ''
+              }
+            }
+          }
+        end
+  
+        subject do
+          patch :update, params: invalid_attributes.merge(id: article.id)
+        end
+  
+        it 'should return 422 status code' do
+          subject
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
+  
+        it 'should return proper error json' do
+          subject
+          # 不需要测试slag，因为创建的时候只有title和content，所以不需要更新
+          expect(json['errors']).to include(
+            {
+            "source" => { "pointer" => "/data/attributes/title" },
+            "detail" => "can't be blank"
+            },
+            {
+            "source" => { "pointer" => "/data/attributes/content" },
+            "detail" => "can't be blank"
+            }
+        )
+        end
+      end
+
+      context 'when success request sent' do
+        let(:access_token) { create :access_token }
+        # 设置header里面已经有可以使用的token了
+        before { request.headers['authorization'] = "Bearer #{access_token.token}" }
+        # 定义不正确的jsondatat格式
+        let(:valid_attributes) do
+          {
+            'data' => {
+              'attributes' => {
+                'title' => 'Title here',
+                'content' => 'Content here',
+                'slug' => 'this-is-some-title'
+              }
+            }
+          }
+        end
+
+        subject do
+          patch :update, params: invalid_attributes.merge(id: article.id)
+        end
+
+        # 测试如果创建成功
+        it 'should have 201 status code' do
+          subject
+          expect(response).to have_http_status(:created)
+        end
+
+        it 'should have proper json body' do
+          subject
+          expect(json_data['attributes']).to include(valid_attributes['data']['attributes'])
+        end
+
+        # 测试article添加
+        it 'should update the article' do
+          subject
+          expect(article.reload.title).to eq(
+            valid_attributes['data']['attributes']['title']
+          )
+        end
+
+      end
+    end
+  end
+
 end
